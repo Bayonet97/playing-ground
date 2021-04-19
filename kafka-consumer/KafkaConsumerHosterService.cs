@@ -18,7 +18,7 @@ namespace kafka_consumer
             _logger = logger;
             _cluster = new ClusterClient(new Configuration
             {
-                Seeds = "Localhost:29092"
+                Seeds = "localhost:29092"
             }, new ConsoleLogger());
         }
         public Task StartAsync(CancellationToken cancellationToken)
