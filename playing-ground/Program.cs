@@ -1,4 +1,14 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Kafka.Common;
+using Kafka.Public;
+using Kafka.Public.Loggers;
+using System.Text;
 
 namespace playing_ground
 {
@@ -6,12 +16,51 @@ namespace playing_ground
     {
         static void Main(string[] args)
         {
-            int year = 2020;
+            CreateHostBuilder(args).Build().Run();
+        }
 
-            int newYear = year++;
-            int anotherYear = ++year;
+        private static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, collection) =>
+                {
+                    collection.AddHostedService<KafkaProducerHostedService>();
+                });
+    }
 
-            Console.WriteLine($"Year++: {newYear}, ++Year: {anotherYear}");
+ 
+    public class KafkaProducerHostedService : IHostedService
+    {
+        private readonly ILogger<KafkaProducerHostedService> _logger;
+        private IProducer<Null, string> _producer;
+
+        public KafkaProducerHostedService(ILogger<KafkaProducerHostedService> logger)
+        {
+            _logger = logger;
+            var config = new ProducerConfig()
+            {
+                BootstrapServers = "localhost:29092"
+            };
+            _producer = new ProducerBuilder<Null, string>(config).Build();
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                var value = $"This is input from a client, input number: {i}";
+                _logger.LogInformation(value);
+                await _producer.ProduceAsync("message", new Message<Null, string>()
+                {
+                    Value = value
+                }, cancellationToken);
+            }
+            _producer.Flush(TimeSpan.FromSeconds(10));
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _producer?.Dispose();
+            return Task.CompletedTask;
         }
     }
 }
