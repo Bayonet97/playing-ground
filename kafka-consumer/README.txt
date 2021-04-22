@@ -1,0 +1,1 @@
+Run image on Docker: docker run -d -p 8920:80 --name kafka-consumer kafka-consumer

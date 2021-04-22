@@ -1,0 +1,1 @@
+Run image on Docker: docker run -d -p 8919:80 --name kafka-producer kafka-producer
